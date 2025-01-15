@@ -87,7 +87,6 @@ config = CrawlerRunConfig(
     extraction_strategy=JsonCssExtractionStrategy(schema)
 )
 
-
 async def run_crawler(url):
     """Uruchamia crawlera i zwraca wyniki."""
     async with AsyncWebCrawler() as crawler:
@@ -96,13 +95,13 @@ async def run_crawler(url):
 
 def get_missing_fields(item):
     """Zwraca listę brakujących pól dla produktu."""
-    required_fields = ["product_name", "product_description", "product_price", "product_img"]
+    required_fields = ["product_name", "product_description", "product_price", "product_img", "product_link"]
     return [field for field in required_fields if not item.get(field)]
 
 async def main():
-    st.title("Web Crawler z crawl4ai")
+    st.title("CRAWLER-ek")
 
-    url = st.text_input("Podaj URL strony do przeszukania:", "https://ekskluzywna.pl/pelniejsze-ksztalty")
+    url = st.text_input("Podaj URL strony do przeszukania:", "https://sportfuel.pl/nowosci")
     if st.button("Uruchom Crawlera"):
         with st.spinner("Pobieranie i przetwarzanie danych..."):
             result = await run_crawler(url)
@@ -112,46 +111,56 @@ async def main():
                 st.write("**Długość Wyczyszczonego HTML:** ", len(result.cleaned_html))
                 st.write("**Długość Surowego HTML:** ", len(result.html))
                 st.write("**Długość Extractowana:** ", len(result.extracted_content))
-                
+
                 if result.extracted_content:
-                    try:
-                        extracted_data = json.loads(result.extracted_content)
-                        st.subheader("Wyodrębnione dane:")
-                        
-                        for item in extracted_data:
-                            st.markdown("---")  # Dodaj linię oddzielającą produkty
-                            col1, col2 = st.columns([1, 2])  # Ustaw 2 kolumny
+                  try:
+                      extracted_data = json.loads(result.extracted_content)
+                      num_products = len(extracted_data)  # Liczba znalezionych produktów
+                      st.write(f"**Liczba znalezionych produktów:** {num_products}")
+                      st.subheader("Wyodrębnione dane:")
+                      
+                      for item in extracted_data:
+                          st.markdown("---")  # Dodaj linię oddzielającą produkty
+                          col1, col2 = st.columns([1, 2])  # Ustaw 2 kolumny
 
-                            with col1:
-                                if item.get("product_img"):
-                                    st.image(item["product_img"], width=200)
-                                else:
-                                    st.write("Brak Zdjęcia")
+                          with col1:
+                              if item.get("product_img"):
+                                  st.image(item["product_img"], width=200)
+                              else:
+                                  st.write("Brak Zdjęcia")
 
-                            with col2:
-                                name = item.get("product_name", "Brak Nazwy")
-                                st.subheader(name)
+                          with col2:
+                              name = item.get("product_name", "Brak Nazwy")
+                              st.subheader(name)
 
-                                description = item.get("product_description", "Brak Opisu")
-                                st.write(description)
+                              description = item.get("product_description", "Brak Opisu")
+                              st.write(description)
 
-                                price = item.get("product_price")
-                                currency = item.get("product_currency", "")
-                                if price:
-                                    st.write(f"**Cena:** {price} {currency}")
-                                else:
-                                    st.write("**Cena:** Brak Danych")
+                              price = item.get("product_price")
+                              currency = item.get("product_currency", "")
+                              if price:
+                                  st.write(f"**Cena:** {price} {currency}")
+                              else:
+                                  st.write("**Cena:** Brak Danych")
+                              
+                              link = item.get("product_link")
+                              if link:
+                                st.markdown(f"[Link do produktu]({link})")
+                              else:
+                                st.write("**Link:** Brak Danych")
 
-                            missing_fields = get_missing_fields(item)
-                            if missing_fields:
-                                st.warning(f"Brakujące pola: {', '.join(missing_fields)}")
 
-                            with st.expander("Pokaż JSON"):
-                                st.json(item)
+                          missing_fields = get_missing_fields(item)
+                          if missing_fields:
+                              st.warning(f"Brakujące pola: {', '.join(missing_fields)}")
 
-                    except json.JSONDecodeError:
-                        st.error("Błąd: Nie można sparsować wyodrębnionych danych jako JSON.")
-                        st.text(result.extracted_content)
+                          with st.expander("Pokaż JSON"):
+                              st.json(item)
+
+                  except json.JSONDecodeError:
+                    st.error("Błąd: Nie można sparsować wyodrębnionych danych jako JSON.")
+                    st.text(result.extracted_content)
+                
                 else:
                     st.warning("Brak wyodrębnionych danych.")
             else:
